@@ -1,0 +1,167 @@
+# Firewall & Password Management Quick Reference Card
+
+## 🔥 FIREWALL COMMANDS
+
+### iptables (Linux) - Quick Commands
+```bash
+# View all rules
+iptables -L -n -v
+
+# Allow SSH (port 22)
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Allow established connections
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Set default policy
+iptables -P INPUT DROP
+iptables -P OUTPUT ACCEPT
+
+# Save/Restore rules
+iptables-save > /etc/iptables/rules.v4
+iptables-restore < /etc/iptables/rules.v4
+
+# Delete all rules
+iptables -F
+
+# Rate limit SSH (4 attempts per minute)
+iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -m recent --update --seconds 60 --hitcount 4 -j DROP
+```
+
+### netsh (Windows) - Quick Commands
+```cmd
+# Allow RDP (port 3389)
+netsh advfirewall firewall add rule name="RDP" dir=in action=allow protocol=TCP localport=3389
+
+# Show all rules
+netsh advfirewall firewall show rule name=all
+
+# Delete rule
+netsh advfirewall firewall delete rule name="RuleName"
+
+# Set default policy
+netsh advfirewall set allprofiles firewallpolicy blockinbound,allowoutbound
+
+# Enable/Disable firewall
+netsh advfirewall set allprofiles state on
+netsh advfirewall set allprofiles state off
+
+# Export/Import config
+netsh advfirewall export "firewall.wfw"
+netsh advfirewall import "firewall.wfw"
+```
+
+## 🔑 PASSWORD CHANGE COMMANDS
+
+### Linux - Quick Commands
+```bash
+# Change password (interactive)
+passwd username
+
+# Change password (non-interactive)
+echo "username:newpassword" | chpasswd
+
+# Generate password hash
+openssl passwd -6 "password"
+
+# Force password change at next login
+chage -d 0 username
+
+# Using the script
+./linux_password_change.sh -u john -g          # Generate random
+./linux_password_change.sh -u john -p Pass123   # Set specific
+./linux_password_change.sh -f users.txt         # Batch change
+```
+
+### Windows - Quick Commands
+```powershell
+# Local user password change
+Set-LocalUser -Name "username" -Password (ConvertTo-SecureString "Password" -AsPlainText -Force)
+
+# Using net user
+net user username "newpassword"
+
+# AD user password change
+Set-ADAccountPassword -Identity "username" -NewPassword (ConvertTo-SecureString "Password" -AsPlainText -Force) -Reset
+
+# Force password change at logon
+Set-ADUser -Identity "username" -ChangePasswordAtLogon $true
+
+# Using the script
+.\windows_password_change.ps1 -Username john -GeneratePassword
+.\windows_password_change.ps1 -Username john -Password "Pass123"
+.\windows_password_change.ps1 -CsvFile users.csv
+```
+
+## 📊 COMMON PORTS REFERENCE
+
+| Service | Port | Protocol | iptables | netsh |
+|---------|------|----------|----------|--------|
+| SSH | 22 | TCP | `iptables -A INPUT -p tcp --dport 22 -j ACCEPT` | N/A |
+| RDP | 3389 | TCP | N/A | `netsh advfirewall firewall add rule name="RDP" dir=in action=allow protocol=TCP localport=3389` |
+| HTTP | 80 | TCP | `iptables -A INPUT -p tcp --dport 80 -j ACCEPT` | `netsh advfirewall firewall add rule name="HTTP" dir=in action=allow protocol=TCP localport=80` |
+| HTTPS | 443 | TCP | `iptables -A INPUT -p tcp --dport 443 -j ACCEPT` | `netsh advfirewall firewall add rule name="HTTPS" dir=in action=allow protocol=TCP localport=443` |
+| DNS | 53 | UDP/TCP | `iptables -A INPUT -p udp --dport 53 -j ACCEPT` | `netsh advfirewall firewall add rule name="DNS" dir=in action=allow protocol=UDP localport=53` |
+| MySQL | 3306 | TCP | `iptables -A INPUT -p tcp --dport 3306 -j ACCEPT` | `netsh advfirewall firewall add rule name="MySQL" dir=in action=allow protocol=TCP localport=3306` |
+| PostgreSQL | 5432 | TCP | `iptables -A INPUT -p tcp --dport 5432 -j ACCEPT` | `netsh advfirewall firewall add rule name="PGSQL" dir=in action=allow protocol=TCP localport=5432` |
+
+## 🛡️ SECURITY BEST PRACTICES
+
+### Firewall Rules
+✅ Default DENY inbound, ALLOW outbound
+✅ Use stateful connection tracking
+✅ Restrict by source IP when possible
+✅ Implement rate limiting for SSH/RDP
+✅ Log dropped packets for analysis
+✅ Review rules regularly
+✅ Document all changes
+
+### Password Management
+✅ Minimum 12 characters (16+ preferred)
+✅ Include uppercase, lowercase, numbers, special chars
+✅ Never hardcode in scripts
+✅ Use secure password generation
+✅ Force change on first login for new users
+✅ Log all password changes
+✅ Use encrypted storage
+✅ Regular password rotation policy
+
+## 🔍 TROUBLESHOOTING
+
+### iptables Issues
+```bash
+# Check if rule exists
+iptables -L -n | grep <port>
+
+# Check connection tracking
+conntrack -L
+
+# View dropped packets log
+tail -f /var/log/syslog | grep "iptables-dropped"
+
+# Test specific port
+nc -zv <host> <port>
+```
+
+### netsh Issues
+```cmd
+# Check Windows Firewall service
+sc query mpssvc
+
+# View firewall logs
+notepad %systemroot%\system32\LogFiles\Firewall\pfirewall.log
+
+# Test connectivity
+Test-NetConnection -ComputerName <host> -Port <port>
+
+# Reset to defaults
+netsh advfirewall reset
+```
+
+## 📝 NOTES
+- iptables: First matching rule wins
+- netsh: All matching rules evaluated
+- iptables: Stateless by default (use conntrack)
+- netsh: Always stateful
+- Always test rules before production
+- Keep emergency console access
