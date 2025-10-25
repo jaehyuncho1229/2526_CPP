@@ -1,0 +1,40 @@
+### **iptables Essential Commands:**
+```bash
+# Save rules
+iptables-save > /etc/iptables/rules.v4
+
+# Restore rules
+iptables-restore < /etc/iptables/rules.v4
+
+# Flush all rules
+iptables -F
+
+# Delete specific rule
+iptables -D INPUT -p tcp --dport 22 -j ACCEPT
+
+# Insert rule at position
+iptables -I INPUT 1 -p tcp --dport 22 -j ACCEPT
+```
+
+### **netsh Essential Commands:**
+```cmd
+# Show all rules
+netsh advfirewall firewall show rule name=all
+
+# Delete rule
+netsh advfirewall firewall delete rule name="RuleName"
+
+# Disable firewall
+netsh advfirewall set allprofiles state off
+
+# Enable firewall
+netsh advfirewall set allprofiles state on
+
+# Reset to defaults
+netsh advfirewall reset
+
+# Export configuration
+netsh advfirewall export "C:\firewall-config.wfw"
+
+# Import configuration
+netsh advfirewall import "C:\firewall-config.wfw"
